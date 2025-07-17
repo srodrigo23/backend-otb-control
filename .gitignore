@@ -2,3 +2,14 @@
 /src/__pycache__
 
 .env
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.sqlite
+*.log
+*.env
+*.DS_Store
+*.egg-info
