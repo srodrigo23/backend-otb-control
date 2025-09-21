@@ -41,7 +41,9 @@ async def root():
 #   return crud.create_user(db=db, user=user)
 
 
-@app.get("/users/", response_model=dict[schemas.User])
+@app.get("/users/", 
+        #  response_model=dict[schemas.User]
+         )
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
   print(skip, limit)
   users = crud.get_users(db, skip=skip, limit=limit)

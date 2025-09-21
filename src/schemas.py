@@ -32,6 +32,9 @@ class User(UserBase):
   first_name:str
   second_name:str
   email:str
+  last_name:str
+  ci:str
+  phone_number:str
   
   # items: list[Item] = []
 
