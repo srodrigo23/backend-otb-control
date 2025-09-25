@@ -12,7 +12,8 @@ app = FastAPI()
 origins = [
     "http://localhost:5173",
     #"http://localhost:8000",
-  ]
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -33,29 +34,28 @@ def get_db():
 async def root():
     return {"message": "Hello World"}
 
-# @app.post("/users/", response_model=schemas.User)
-# def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-#   db_user = crud.get_user_by_email(db, email=user.email)
-#   if db_user:
-#     raise HTTPException(status_code=400, detail="Email already registered")
-#   return crud.create_user(db=db, user=user)
+@app.post("/users/", response_model=schemas.User)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+  db_user = crud.get_user_by_email(db, email=user.email)
+  if db_user:
+    raise HTTPException(status_code=400, detail="Email already registered")
+  return crud.create_user(db=db, user=user)
 
 
 @app.get("/users/", 
         #  response_model=dict[schemas.User]
          )
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-  print(skip, limit)
+  # print(skip, limit)
   users = crud.get_users(db, skip=skip, limit=limit)
-  
-  # if users:
-  return {
-    "data": users,
-    "total": len(users),
-    "page": skip // limit + 1,
-    "size": limit
-  }
-  # return {'success': 'True'}
+  if users:
+    return {
+      "data": users,
+      "total": len(users),
+      "page": skip // limit + 1,
+      "size": limit
+    }
+  return {'success': 'True'}
 
 # @app.get("/users/{user_id}", response_model=schemas.User)
 # def read_user(user_id: int, db: Session = Depends(get_db)):
