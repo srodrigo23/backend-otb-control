@@ -15,28 +15,36 @@ class Item(ItemBase):
   owner_id: int
 
   class Config:
-    orm_mode = False
+    from_attributes = True
 
 
 class UserBase(BaseModel):
-  email: str
+  email: str | None = None
 
 
 class UserCreate(UserBase):
   password: str
 
 
-class User(UserBase):
+class UserUpdate(BaseModel):
+  first_name: str | None = None
+  second_name: str | None = None
+  last_name: str | None = None
+  ci: str | None = None
+  phone_number: int | None = None
+  email: str | None = None
+
+
+class User(BaseModel):
   id: int
-  # is_active: bool
-  first_name:str
-  second_name:str
-  email:str
-  last_name:str
-  ci:str
-  phone_number:str
-  
+  first_name: str
+  second_name: str | None = None
+  email: str | None = None
+  last_name: str
+  ci: str
+  phone_number: str | int
+
   # items: list[Item] = []
 
   class Config:
-    orm_mode =False 
+    from_attributes = True 

@@ -76,3 +76,19 @@ def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 # def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 #     items = crud.get_items(db, skip=skip, limit=limit)
 #     return items
+
+
+@app.put("/users/{user_id}", response_model=schemas.User)
+def update_user(user_id: int, user: schemas.UserUpdate, db: Session = Depends(get_db)):
+  db_user = crud.update_user(db, user_id=user_id, user=user)
+  if db_user is None:
+    raise HTTPException(status_code=404, detail="User not found")
+  return db_user
+
+
+@app.delete("/users/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+  success = crud.delete_user(db, user_id=user_id)
+  if not success:
+    raise HTTPException(status_code=404, detail="User not found")
+  return {"message": "User deleted successfully", "id": user_id}
