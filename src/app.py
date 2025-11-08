@@ -34,25 +34,24 @@ def get_db():
 async def root():
     return {"message": "Hello World"}
 
-@app.post("/users/", response_model=schemas.User)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-  db_user = crud.get_user_by_email(db, email=user.email)
-  if db_user:
-    raise HTTPException(status_code=400, detail="Email already registered")
-  return crud.create_user(db=db, user=user)
+@app.post("/neighbors/", response_model=schemas.Neighbor)
+def create_neighbor(neighbor: schemas.NeighborCreate, db: Session = Depends(get_db)):
+  # Validar email solo si se proporciona
+  if neighbor.email:
+    db_neighbor = crud.get_neighbor_by_email(db, email=neighbor.email)
+    if db_neighbor:
+      raise HTTPException(status_code=400, detail="Email already registered")
+  return crud.create_neighbor(db=db, neighbor=neighbor)
 
 
-@app.get("/users/", 
-        #  response_model=dict[schemas.User]
-         )
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-  # print(skip, limit)
-  users = crud.get_users(db, skip=skip, limit=limit)
-  if users:
+@app.get("/neighbors/")
+def read_neighbors(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+  neighbors = crud.get_neighbors(db, skip=skip, limit=limit)
+  if neighbors:
     return {
-      "data": users,
-      "total": len(users),
-      "page": skip // limit + 1,
+      "data": neighbors,
+      "total": len(neighbors),
+      "page": skip // limit + 1 if limit > 0 else 1,
       "size": limit
     }
   return {'success': 'True'}
@@ -78,17 +77,17 @@ def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 #     return items
 
 
-@app.put("/users/{user_id}", response_model=schemas.User)
-def update_user(user_id: int, user: schemas.UserUpdate, db: Session = Depends(get_db)):
-  db_user = crud.update_user(db, user_id=user_id, user=user)
-  if db_user is None:
-    raise HTTPException(status_code=404, detail="User not found")
-  return db_user
+@app.put("/neighbors/{neighbor_id}", response_model=schemas.Neighbor)
+def update_neighbor(neighbor_id: int, neighbor: schemas.NeighborUpdate, db: Session = Depends(get_db)):
+  db_neighbor = crud.update_neighbor(db, neighbor_id=neighbor_id, neighbor=neighbor)
+  if db_neighbor is None:
+    raise HTTPException(status_code=404, detail="Neighbor not found")
+  return db_neighbor
 
 
-@app.delete("/users/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db)):
-  success = crud.delete_user(db, user_id=user_id)
+@app.delete("/neighbors/{neighbor_id}")
+def delete_neighbor(neighbor_id: int, db: Session = Depends(get_db)):
+  success = crud.delete_neighbor(db, neighbor_id=neighbor_id)
   if not success:
-    raise HTTPException(status_code=404, detail="User not found")
-  return {"message": "User deleted successfully", "id": user_id}
+    raise HTTPException(status_code=404, detail="Neighbor not found")
+  return {"message": "Neighbor deleted successfully", "id": neighbor_id}

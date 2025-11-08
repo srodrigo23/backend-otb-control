@@ -18,15 +18,20 @@ class Item(ItemBase):
     from_attributes = True
 
 
-class UserBase(BaseModel):
+class NeighborBase(BaseModel):
   email: str | None = None
 
 
-class UserCreate(UserBase):
-  password: str
+class NeighborCreate(BaseModel):
+  first_name: str
+  second_name: str | None = None
+  last_name: str
+  ci: str
+  phone_number: str | int
+  email: str | None = None
 
 
-class UserUpdate(BaseModel):
+class NeighborUpdate(BaseModel):
   first_name: str | None = None
   second_name: str | None = None
   last_name: str | None = None
@@ -35,7 +40,7 @@ class UserUpdate(BaseModel):
   email: str | None = None
 
 
-class User(BaseModel):
+class Neighbor(BaseModel):
   id: int
   first_name: str
   second_name: str | None = None
@@ -43,8 +48,6 @@ class User(BaseModel):
   last_name: str
   ci: str
   phone_number: str | int
-
-  # items: list[Item] = []
 
   class Config:
     from_attributes = True 
