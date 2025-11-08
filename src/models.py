@@ -1,11 +1,11 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Date
 from sqlalchemy.orm import relationship
 
 from database import Base
 
 
 class Neighbor(Base):
-  __tablename__ = "users"  # Mantener nombre de tabla para compatibilidad
+  __tablename__ = "neighbors"  # Mantener nombre de tabla para compatibilidad
 
   id = Column(Integer, primary_key=True)
 
@@ -13,10 +13,13 @@ class Neighbor(Base):
   second_name = Column(String(30), default="")
   last_name = Column(String(30))
 
-  ci = Column(String(10))
-  phone_number = Column(String(15))
-  email = Column(String(30))
+  ci = Column(Integer)
+  phone_number = Column(Integer)
 
+  email = Column(String(30))
+  birth_day = Column(Date)
+  meter_code = Column(String(50))
+  section = Column(String(50))
   # items = relationship("Item", back_populates="owner")
 
 
