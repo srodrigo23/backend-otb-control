@@ -93,6 +93,84 @@ def delete_neighbor(neighbor_id: int, db: Session = Depends(get_db)):
   return {"message": "Neighbor deleted successfully", "id": neighbor_id}
 
 
+@app.get("/neighbors/{neighbor_id}/meters")
+def get_neighbor_meters(neighbor_id: int, db: Session = Depends(get_db)):
+  """
+  Obtiene todos los medidores de un vecino
+  """
+  # Verificar que el vecino existe
+  neighbor = crud.get_neighbor(db, neighbor_id=neighbor_id)
+  if neighbor is None:
+    raise HTTPException(status_code=404, detail="Neighbor not found")
+
+  # Obtener medidores
+  meters = crud.get_neighbor_meters(db, neighbor_id=neighbor_id)
+
+  # Formatear respuesta
+  meters_data = []
+  for meter in meters:
+    meters_data.append({
+      "id": meter.id,
+      "meter_code": meter.meter_code,
+      "label": meter.label,
+      "is_active": meter.is_active,
+      "installation_date": str(meter.installation_date) if meter.installation_date else None,
+      "last_maintenance_date": str(meter.last_maintenance_date) if meter.last_maintenance_date else None,
+      "notes": meter.notes,
+      "created_at": str(meter.created_at)
+    })
+
+  return meters_data
+
+
+@app.get("/neighbors/{neighbor_id}/payments")
+def get_neighbor_payments(neighbor_id: int, db: Session = Depends(get_db)):
+  """
+  Obtiene todos los pagos realizados por un vecino con sus detalles
+  """
+  # Verificar que el vecino existe
+  neighbor = crud.get_neighbor(db, neighbor_id=neighbor_id)
+  if neighbor is None:
+    raise HTTPException(status_code=404, detail="Neighbor not found")
+
+  # Obtener pagos
+  payments = crud.get_neighbor_payments(db, neighbor_id=neighbor_id)
+
+  # Formatear respuesta con detalles de cada pago
+  payments_data = []
+  for payment in payments:
+    # Obtener detalles del pago (a qué deudas se aplicó)
+    payment_details_list = []
+    for detail in payment.payment_details:
+      debt_item = detail.debt_item
+      payment_details_list.append({
+        "id": detail.id,
+        "debt_item_id": detail.debt_item_id,
+        "debt_reason": debt_item.reason if debt_item else "Desconocido",
+        "debt_type_name": debt_item.debt_type.name if debt_item and debt_item.debt_type else "Desconocido",
+        "amount_applied": detail.amount_applied,
+        "previous_balance": detail.previous_balance,
+        "new_balance": detail.new_balance,
+        "notes": detail.notes
+      })
+
+    payments_data.append({
+      "id": payment.id,
+      "neighbor_id": payment.neighbor_id,
+      "collect_debt_id": payment.collect_debt_id,
+      "payment_date": str(payment.payment_date),
+      "total_amount": payment.total_amount,
+      "payment_method": payment.payment_method,
+      "reference_number": payment.reference_number,
+      "received_by": payment.received_by,
+      "notes": payment.notes,
+      "created_at": str(payment.created_at),
+      "payment_details": payment_details_list
+    })
+
+  return payments_data
+
+
 # ========== RUTAS DE DEUDAS ==========
 
 @app.get("/neighbors/{neighbor_id}/debts/active", response_model=schemas.NeighborDebtsResponse)

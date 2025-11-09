@@ -31,6 +31,18 @@ def create_neighbor(db: Session, neighbor: schemas.NeighborCreate):
     return db_neighbor
 
 
+def get_neighbor_meters(db: Session, neighbor_id: int):
+    """Obtiene todos los medidores de un vecino"""
+    return db.query(models.NeighborMeter).filter(models.NeighborMeter.neighbor_id == neighbor_id).all()
+
+
+def get_neighbor_payments(db: Session, neighbor_id: int):
+    """Obtiene todos los pagos de un vecino ordenados por fecha descendente"""
+    return db.query(models.Payment).filter(
+        models.Payment.neighbor_id == neighbor_id
+    ).order_by(models.Payment.payment_date.desc()).all()
+
+
 def get_items(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Item).offset(skip).limit(limit).all()
 
