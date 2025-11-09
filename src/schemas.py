@@ -109,4 +109,44 @@ class NeighborDebtsResponse(BaseModel):
   total_debts: int  # Total de deudas activas
   total_amount: int  # Monto total adeudado en centavos
   total_balance: int  # Saldo total pendiente
-  debts: list[DebtItemDetail] 
+  debts: list[DebtItemDetail]
+
+
+# Schemas para Measure (Mediciones)
+class MeasureBase(BaseModel):
+  measure_date: str  # Fecha en formato string
+  period: str | None = None
+  reader_name: str | None = None
+  notes: str | None = None
+
+
+class MeasureCreate(MeasureBase):
+  pass
+
+
+class MeasureUpdate(BaseModel):
+  measure_date: str | None = None
+  period: str | None = None
+  reader_name: str | None = None
+  status: str | None = None
+  total_meters: int | None = None
+  meters_read: int | None = None
+  meters_pending: int | None = None
+  notes: str | None = None
+
+
+class Measure(BaseModel):
+  id: int
+  measure_date: str
+  period: str | None = None
+  reader_name: str | None = None
+  status: str
+  total_meters: int
+  meters_read: int
+  meters_pending: int
+  notes: str | None = None
+  created_at: str
+  updated_at: str
+
+  class Config:
+    from_attributes = True 
