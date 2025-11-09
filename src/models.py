@@ -15,8 +15,8 @@ class Neighbor(Base):
   second_name = Column(String(30), default="")
   last_name = Column(String(30))
 
-  ci = Column(String(20))
-  phone_number = Column(String(20))
+  ci = Column(Integer)
+  phone_number = Column(Integer)
   email = Column(String(50))
   birth_day = Column(Date)
   section = Column(String(50))

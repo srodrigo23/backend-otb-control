@@ -61,3 +61,35 @@ def delete_neighbor(db: Session, neighbor_id: int):
         db.commit()
         return True
     return False
+
+
+# ========== DEUDAS ==========
+
+def get_neighbor_active_debts(db: Session, neighbor_id: int):
+    """
+    Obtiene todas las deudas activas (pending, partial, overdue) de un vecino
+    """
+    debts = db.query(models.DebtItem).filter(
+        models.DebtItem.neighbor_id == neighbor_id,
+        models.DebtItem.status.in_(["pending", "partial", "overdue"])
+    ).all()
+
+    return debts
+
+
+def get_neighbor_all_debts(db: Session, neighbor_id: int):
+    """
+    Obtiene todas las deudas de un vecino (incluyendo pagadas)
+    """
+    debts = db.query(models.DebtItem).filter(
+        models.DebtItem.neighbor_id == neighbor_id
+    ).all()
+
+    return debts
+
+
+def get_debt_item(db: Session, debt_id: int):
+    """
+    Obtiene una deuda específica por ID
+    """
+    return db.query(models.DebtItem).filter(models.DebtItem.id == debt_id).first()
