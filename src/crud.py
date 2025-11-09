@@ -166,3 +166,130 @@ def delete_measure(db: Session, measure_id: int):
         db.commit()
         return True
     return False
+
+
+# ========== REUNIONES ==========
+
+def get_meets(db: Session):
+    """
+    Obtiene todas las reuniones ordenadas por fecha de creación (más recientes primero)
+    """
+    return db.query(models.Meet).order_by(models.Meet.created_at.desc()).all()
+
+
+def get_meet(db: Session, meet_id: int):
+    """
+    Obtiene una reunión específica por ID
+    """
+    return db.query(models.Meet).filter(models.Meet.id == meet_id).first()
+
+
+def create_meet(db: Session, meet: schemas.MeetCreate):
+    """
+    Crea una nueva reunión
+    """
+    from datetime import datetime
+
+    # Convertir la fecha de string a objeto DateTime
+    meet_date = datetime.strptime(meet.meet_date, "%Y-%m-%dT%H:%M")
+
+    db_meet = models.Meet(
+        meet_date=meet_date,
+        meet_type=meet.meet_type,
+        title=meet.title,
+        description=meet.description,
+        location=meet.location,
+        is_mandatory=meet.is_mandatory,
+        organizer=meet.organizer,
+        notes=meet.notes,
+        status="scheduled",
+        total_neighbors=0,
+        total_present=0,
+        total_absent=0,
+        total_on_time=0
+    )
+    db.add(db_meet)
+    db.commit()
+    db.refresh(db_meet)
+    return db_meet
+
+
+def update_meet(db: Session, meet_id: int, meet: schemas.MeetUpdate):
+    """
+    Actualiza una reunión existente
+    """
+    db_meet = db.query(models.Meet).filter(models.Meet.id == meet_id).first()
+    if db_meet:
+        update_data = meet.model_dump(exclude_unset=True)
+
+        # Convertir fechas si se proporcionan
+        from datetime import datetime
+        if "meet_date" in update_data and update_data["meet_date"]:
+            update_data["meet_date"] = datetime.strptime(update_data["meet_date"], "%Y-%m-%dT%H:%M")
+        if "start_time" in update_data and update_data["start_time"]:
+            update_data["start_time"] = datetime.strptime(update_data["start_time"], "%Y-%m-%dT%H:%M")
+        if "end_time" in update_data and update_data["end_time"]:
+            update_data["end_time"] = datetime.strptime(update_data["end_time"], "%Y-%m-%dT%H:%M")
+
+        for key, value in update_data.items():
+            setattr(db_meet, key, value)
+        db.commit()
+        db.refresh(db_meet)
+    return db_meet
+
+
+def delete_meet(db: Session, meet_id: int):
+    """
+    Elimina una reunión
+    """
+    db_meet = db.query(models.Meet).filter(models.Meet.id == meet_id).first()
+    if db_meet:
+        db.delete(db_meet)
+        db.commit()
+        return True
+    return False
+
+
+def get_meet_assistances(db: Session, meet_id: int):
+    """
+    Obtiene todas las asistencias de una reunión específica
+    """
+    return db.query(models.Assistance).filter(models.Assistance.meet_id == meet_id).all()
+
+
+def create_assistance(db: Session, assistance: schemas.AssistanceCreate):
+    """
+    Crea un registro de asistencia
+    """
+    db_assistance = models.Assistance(
+        meet_id=assistance.meet_id,
+        neighbor_id=assistance.neighbor_id,
+        is_present=assistance.is_present,
+        is_on_time=assistance.is_on_time
+    )
+    db.add(db_assistance)
+    db.commit()
+    db.refresh(db_assistance)
+    return db_assistance
+
+
+def update_assistance(db: Session, assistance_id: int, assistance: schemas.AssistanceUpdate):
+    """
+    Actualiza un registro de asistencia
+    """
+    db_assistance = db.query(models.Assistance).filter(models.Assistance.id == assistance_id).first()
+    if db_assistance:
+        update_data = assistance.model_dump(exclude_unset=True)
+
+        # Convertir fechas si se proporcionan
+        from datetime import datetime
+        if "arrival_time" in update_data and update_data["arrival_time"]:
+            update_data["arrival_time"] = datetime.strptime(update_data["arrival_time"], "%Y-%m-%dT%H:%M")
+        if "departure_time" in update_data and update_data["departure_time"]:
+            update_data["departure_time"] = datetime.strptime(update_data["departure_time"], "%Y-%m-%dT%H:%M")
+
+        for key, value in update_data.items():
+            setattr(db_assistance, key, value)
+        db.commit()
+        db.refresh(db_assistance)
+    return db_assistance

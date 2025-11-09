@@ -149,4 +149,100 @@ class Measure(BaseModel):
   updated_at: str
 
   class Config:
+    from_attributes = True
+
+
+# Schemas para Meet (Reuniones)
+class MeetBase(BaseModel):
+  meet_date: str  # DateTime en formato string
+  meet_type: str
+  title: str
+  description: str | None = None
+  location: str | None = None
+  is_mandatory: bool = False
+  organizer: str | None = None
+  notes: str | None = None
+
+
+class MeetCreate(MeetBase):
+  pass
+
+
+class MeetUpdate(BaseModel):
+  meet_date: str | None = None
+  meet_type: str | None = None
+  title: str | None = None
+  description: str | None = None
+  location: str | None = None
+  start_time: str | None = None
+  end_time: str | None = None
+  status: str | None = None
+  is_mandatory: bool | None = None
+  organizer: str | None = None
+  notes: str | None = None
+
+
+class Meet(BaseModel):
+  id: int
+  meet_date: str
+  meet_type: str
+  title: str
+  description: str | None = None
+  location: str | None = None
+  start_time: str | None = None
+  end_time: str | None = None
+  status: str
+  is_mandatory: bool
+  total_neighbors: int
+  total_present: int
+  total_absent: int
+  total_on_time: int
+  organizer: str | None = None
+  notes: str | None = None
+  created_at: str
+  updated_at: str
+
+  class Config:
+    from_attributes = True
+
+
+# Schemas para Assistance (Asistencia)
+class AssistanceBase(BaseModel):
+  neighbor_id: int
+  is_present: bool = False
+  is_on_time: bool = False
+
+
+class AssistanceCreate(AssistanceBase):
+  meet_id: int
+
+
+class AssistanceUpdate(BaseModel):
+  is_present: bool | None = None
+  is_on_time: bool | None = None
+  arrival_time: str | None = None
+  departure_time: str | None = None
+  excuse_reason: str | None = None
+  has_excuse: bool | None = None
+  represented_by: str | None = None
+  has_representative: bool | None = None
+  notes: str | None = None
+
+
+class Assistance(BaseModel):
+  id: int
+  meet_id: int
+  neighbor_id: int
+  neighbor_name: str | None = None  # Para incluir el nombre del vecino
+  is_present: bool
+  is_on_time: bool
+  arrival_time: str | None = None
+  departure_time: str | None = None
+  excuse_reason: str | None = None
+  has_excuse: bool
+  represented_by: str | None = None
+  has_representative: bool
+  notes: str | None = None
+
+  class Config:
     from_attributes = True 
