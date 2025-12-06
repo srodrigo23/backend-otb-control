@@ -1,9 +1,7 @@
 from sqlalchemy.orm import sessionmaker
 import sqlalchemy
 from models import (
-    Neighbor, NeighborMeter, Measure, MeterReading,
-    Meet, Assistance, DebtType, DebtItem,
-    CollectDebt, Payment, PaymentDetail
+    Neighbor, NeighborMeter, Measure, MeterReading, DebtType
 )
 import pandas as pd
 from datetime import datetime, timedelta
@@ -45,7 +43,7 @@ def parse_date(date_str):
 
 # 1. CARGAR VECINOS DESDE CSV
 print("\n1. Cargando vecinos desde CSV...")
-df = pd.read_csv('data/vecinos.csv')
+df = pd.read_csv('data/vecinos_of.csv')
 
 neighbors_list = []
 for index, row in df.iterrows():
@@ -104,11 +102,47 @@ for dt in debt_types:
 
 db.commit()
 
-# 3. CREAR MEDICIONES DE AGUA (3 meses)
-print("\n3. Creando jornadas de medición de agua...")
+# 3. EXTRAER COLUMNAS DE LECTURA DEL CSV
+print("\n3. Identificando columnas de lectura...")
+# Buscar todas las columnas que empiezan con "LEC"
+reading_columns = [col for col in df.columns if col.startswith('LEC')]
+print(f"  ✓ Columnas de lectura encontradas: {len(reading_columns)}")
+for col in reading_columns:
+    print(f"    - {col}")
+
+# Función para parsear fechas de las columnas de lectura
+def parse_reading_date(col_name):
+    """
+    Parsea fechas del formato 'LEC. 05/01/25' a objeto date
+    """
+    try:
+        # Eliminar 'LEC.' y espacios
+        date_str = col_name.replace('LEC.', '').replace('LEC', '').strip()
+
+        # Parsear fecha DD/MM/YY
+        parts = date_str.split('/')
+        if len(parts) == 3:
+            day, month, year = parts
+            # Convertir año de 2 dígitos a 4 dígitos
+            if len(year) == 2:
+                year = '20' + year if int(year) < 50 else '19' + year
+
+            return datetime.strptime(f"{day}/{month}/{year}", "%d/%m/%Y").date()
+    except Exception as e:
+        print(f"    Error parseando fecha de columna '{col_name}': {e}")
+        return None
+    return None
+
+# 4. CREAR MEDICIONES DE AGUA BASADAS EN LAS COLUMNAS
+print("\n4. Creando jornadas de medición de agua...")
 measures = []
-for i in range(3):
-    measure_date = datetime.now().date() - timedelta(days=90 - (i * 30))
+measures_dict = {}  # Para mapear columna -> measure
+
+for col in reading_columns:
+    measure_date = parse_reading_date(col)
+    if not measure_date:
+        continue
+
     period = measure_date.strftime("%Y-%m")
 
     measure = Measure(
@@ -117,293 +151,87 @@ for i in range(3):
         reader_name=random.choice(["Juan Pérez", "María López", "Carlos Ruiz"]),
         status="completed",
         total_meters=len(neighbors_list),
-        meters_read=len(neighbors_list),
+        meters_read=0,  # Se actualizará después
         meters_pending=0,
-        notes=f"Medición completa del mes {period}"
+        notes=f"Medición del {measure_date.strftime('%d/%m/%Y')}"
     )
     db.add(measure)
     db.flush()
     measures.append(measure)
-    print(f"  ✓ Medición: {period} - {measure.reader_name}")
+    measures_dict[col] = measure
+    print(f"  ✓ Medición: {measure_date.strftime('%d/%m/%Y')} ({period})")
 
 db.commit()
 
-# 4. CREAR LECTURAS DE MEDIDORES
-print("\n4. Creando lecturas de medidores...")
+# 5. CREAR LECTURAS DE MEDIDORES DESDE EL CSV
+print("\n5. Creando lecturas de medidores desde CSV...")
 reading_count = 0
-for neighbor in neighbors_list:
-    # Obtener el medidor del vecino
-    meter = db.query(NeighborMeter).filter(NeighborMeter.neighbor_id == neighbor.id).first()
+meters_read_per_measure = {measure.id: 0 for measure in measures}
+
+for index, row in df.iterrows():
+    # Obtener el código del medidor
+    meter_code = str(row['Cod. medidor']).strip() if pd.notna(row['Cod. medidor']) else None
+    if not meter_code:
+        continue
+
+    # Buscar el medidor en la base de datos
+    meter = db.query(NeighborMeter).filter(NeighborMeter.meter_code == meter_code).first()
     if not meter:
         continue
 
-    previous = random.randint(1000, 5000)  # Lectura inicial
+    # Crear lecturas para cada columna de lectura
+    for col in reading_columns:
+        if col not in measures_dict:
+            continue
 
-    for measure in measures:
-        consumption = random.randint(5, 50)  # Consumo entre 5 y 50 m³
-        current = previous + consumption
+        measure = measures_dict[col]
 
+        # Obtener el valor de la lectura
+        reading_value = row[col]
+
+        # Validar que sea un número válido
+        try:
+            current_reading = int(float(reading_value))
+            if current_reading == 0:
+                # Lectura 0 puede significar medidor sin lectura
+                continue
+        except (ValueError, TypeError):
+            # No es un número válido, saltar
+            continue
+
+        # Crear la lectura
         reading = MeterReading(
             measure_id=measure.id,
             meter_id=meter.id,
-            current_reading=current,
+            current_reading=current_reading,
             reading_date=measure.measure_date,
             status="normal",
-            has_anomaly=random.choice([True, False]) if consumption > 40 else False,
-            notes=f"Consumo: {consumption} m³"
+            has_anomaly=False,
+            notes=f"Lectura: {current_reading}"
         )
         db.add(reading)
-        previous = current
         reading_count += 1
+        meters_read_per_measure[measure.id] += 1
+
+# Actualizar contadores de mediciones
+for measure in measures:
+    measure.meters_read = meters_read_per_measure[measure.id]
+    measure.meters_pending = measure.total_meters - measure.meters_read
 
 db.commit()
 print(f"  ✓ Total lecturas creadas: {reading_count}")
+for measure in measures:
+    print(f"    - {measure.measure_date.strftime('%d/%m/%Y')}: {measure.meters_read} lecturas")
 
-# 5. CREAR REUNIONES
-print("\n5. Creando reuniones...")
-meetings = []
-meet_types = ["ordinaria", "extraordinaria", "emergencia"]
-for i in range(5):
-    meet_date = datetime.now() - timedelta(days=random.randint(30, 180))
-    meet = Meet(
-        meet_date=meet_date,
-        meet_type=random.choice(meet_types),
-        title=f"Reunión {i+1} - Asuntos del barrio",
-        description="Discusión de temas importantes de la comunidad",
-        location="Casa comunal",
-        start_time=meet_date,
-        end_time=meet_date + timedelta(hours=2),
-        status="completed",
-        is_mandatory=random.choice([True, False]),
-        total_neighbors=len(neighbors_list),
-        organizer="Directiva OTB"
-    )
-    db.add(meet)
-    db.flush()
-    meetings.append(meet)
-    print(f"  ✓ Reunión: {meet.title} - {meet.meet_type}")
-
-db.commit()
-
-# 6. CREAR ASISTENCIAS A REUNIONES
-print("\n6. Registrando asistencias a reuniones...")
-assistance_count = 0
-for meet in meetings:
-    present_count = 0
-    on_time_count = 0
-
-    for neighbor in neighbors_list:
-        is_present = random.choice([True, False, True])  # 66% de asistencia
-        is_on_time = random.choice([True, False, True]) if is_present else False
-
-        assistance = Assistance(
-            meet_id=meet.id,
-            neighbor_id=neighbor.id,
-            is_present=is_present,
-            is_on_time=is_on_time,
-            arrival_time=meet.start_time + timedelta(minutes=random.randint(0, 30)) if is_present else None,
-            has_excuse=random.choice([True, False]) if not is_present else False,
-            excuse_reason="Motivos laborales" if not is_present and random.choice([True, False]) else None
-        )
-        db.add(assistance)
-
-        if is_present:
-            present_count += 1
-            if is_on_time:
-                on_time_count += 1
-        assistance_count += 1
-
-    # Actualizar estadísticas de la reunión
-    meet.total_present = present_count
-    meet.total_absent = len(neighbors_list) - present_count
-    meet.total_on_time = on_time_count
-
-db.commit()
-print(f"  ✓ Total asistencias registradas: {assistance_count}")
-
-# 7. CREAR DEUDAS DE AGUA
-print("\n7. Creando deudas por consumo de agua...")
-debt_type_water = db.query(DebtType).filter(DebtType.name == "Consumo de Agua").first()
-water_debt_count = 0
-
-for neighbor in neighbors_list:
-    meter = db.query(NeighborMeter).filter(NeighborMeter.neighbor_id == neighbor.id).first()
-    if not meter:
-        continue
-
-    # Crear deudas por cada medición
-    readings = db.query(MeterReading).join(NeighborMeter).filter(
-        NeighborMeter.id == meter.id
-    ).all()
-
-    for reading in readings:
-        # Calcular monto basado en consumo (simulado)
-        consumption = reading.current_reading - 1000  # Simplificado
-        amount = max(500, consumption * 3)  # Mínimo 5 Bs, luego 3 Bs/m³ (en centavos)
-
-        # Algunos vecinos ya pagaron
-        is_paid = random.choice([True, False, False])  # 33% ya pagó
-
-        debt = DebtItem(
-            neighbor_id=neighbor.id,
-            debt_type_id=debt_type_water.id,
-            meter_reading_id=reading.id,
-            amount=amount,
-            amount_paid=amount if is_paid else 0,
-            balance=0 if is_paid else amount,
-            reason=f"Consumo de agua - {reading.notes}",
-            period=db.query(Measure).filter(Measure.id == reading.measure_id).first().period,
-            issue_date=reading.reading_date.date(),
-            due_date=reading.reading_date.date() + timedelta(days=30),
-            status="paid" if is_paid else "pending",
-            paid_date=reading.reading_date.date() + timedelta(days=random.randint(1, 15)) if is_paid else None
-        )
-        db.add(debt)
-        water_debt_count += 1
-
-db.commit()
-print(f"  ✓ Total deudas de agua creadas: {water_debt_count}")
-
-# 8. CREAR DEUDAS POR INASISTENCIA
-print("\n8. Creando multas por inasistencia...")
-debt_type_fine = db.query(DebtType).filter(DebtType.name == "Multa por Inasistencia").first()
-fine_count = 0
-
-for meet in meetings:
-    if not meet.is_mandatory:
-        continue
-
-    absences = db.query(Assistance).filter(
-        Assistance.meet_id == meet.id,
-        Assistance.is_present == False,
-        Assistance.has_excuse == False
-    ).all()
-
-    for absence in absences:
-        fine_amount = 2000  # 20 Bs en centavos
-
-        debt = DebtItem(
-            neighbor_id=absence.neighbor_id,
-            debt_type_id=debt_type_fine.id,
-            assistance_id=absence.id,
-            amount=fine_amount,
-            amount_paid=0,
-            balance=fine_amount,
-            reason=f"Inasistencia a reunión: {meet.title}",
-            period=meet.meet_date.strftime("%Y-%m"),
-            issue_date=meet.meet_date.date(),
-            due_date=meet.meet_date.date() + timedelta(days=15),
-            status="pending"
-        )
-        db.add(debt)
-        fine_count += 1
-
-db.commit()
-print(f"  ✓ Total multas por inasistencia: {fine_count}")
-
-# 9. CREAR JORNADAS DE COBRO
-print("\n9. Creando jornadas de cobro...")
-collect_debts = []
-for i in range(2):
-    collect_date = datetime.now().date() - timedelta(days=60 - (i * 30))
-
-    collect = CollectDebt(
-        collect_date=collect_date,
-        period=collect_date.strftime("%Y-%m"),
-        collector_name=random.choice(["Pedro Mamani", "Rosa Quispe"]),
-        location="Plaza principal",
-        status="completed",
-        start_time=datetime.combine(collect_date, datetime.min.time().replace(hour=9)),
-        end_time=datetime.combine(collect_date, datetime.min.time().replace(hour=17))
-    )
-    db.add(collect)
-    db.flush()
-    collect_debts.append(collect)
-    print(f"  ✓ Jornada de cobro: {collect.period} - {collect.collector_name}")
-
-db.commit()
-
-# 10. CREAR PAGOS
-print("\n10. Creando pagos...")
-payment_count = 0
-total_paid_amount = 0
-
-for collect in collect_debts:
-    neighbors_to_pay = random.sample(neighbors_list, k=random.randint(20, 40))
-
-    for neighbor in neighbors_to_pay:
-        # Obtener deudas pendientes del vecino
-        pending_debts = db.query(DebtItem).filter(
-            DebtItem.neighbor_id == neighbor.id,
-            DebtItem.status == "pending"
-        ).limit(random.randint(1, 3)).all()
-
-        if not pending_debts:
-            continue
-
-        # Calcular monto total a pagar
-        total_payment = sum([debt.balance for debt in pending_debts])
-
-        payment = Payment(
-            neighbor_id=neighbor.id,
-            collect_debt_id=collect.id,
-            payment_date=collect.collect_date,
-            total_amount=total_payment,
-            payment_method=random.choice(["cash", "transfer", "qr"]),
-            reference_number=f"REC-{payment_count+1:05d}",
-            received_by=collect.collector_name
-        )
-        db.add(payment)
-        db.flush()
-
-        # Crear detalles de pago
-        for debt in pending_debts:
-            detail = PaymentDetail(
-                payment_id=payment.id,
-                debt_item_id=debt.id,
-                amount_applied=debt.balance,
-                previous_balance=debt.balance,
-                new_balance=0
-            )
-            db.add(detail)
-
-            # Actualizar deuda
-            debt.amount_paid += debt.balance
-            debt.balance = 0
-            debt.status = "paid"
-            debt.paid_date = collect.collect_date
-
-        payment_count += 1
-        total_paid_amount += total_payment
-
-db.commit()
-print(f"  ✓ Total pagos creados: {payment_count}")
-print(f"  ✓ Monto total cobrado: {total_paid_amount/100:.2f} Bs")
-
-# Actualizar estadísticas de jornadas de cobro
-for collect in collect_debts:
-    payments = db.query(Payment).filter(Payment.collect_debt_id == collect.id).all()
-    collect.total_payments = len(payments)
-    collect.total_collected = sum([p.total_amount for p in payments])
-    collect.total_neighbors_paid = len(set([p.neighbor_id for p in payments]))
-
-db.commit()
 
 print("\n" + "=" * 60)
 print("RESUMEN DE DATOS CARGADOS")
 print("=" * 60)
 print(f"Vecinos:                    {len(neighbors_list)}")
 print(f"Medidores:                  {db.query(NeighborMeter).count()}")
+print(f"Tipos de deuda:             {len(debt_types)}")
 print(f"Jornadas de medición:       {len(measures)}")
 print(f"Lecturas de medidores:      {reading_count}")
-print(f"Reuniones:                  {len(meetings)}")
-print(f"Asistencias registradas:    {assistance_count}")
-print(f"Tipos de deuda:             {len(debt_types)}")
-print(f"Deudas de agua:             {water_debt_count}")
-print(f"Multas por inasistencia:    {fine_count}")
-print(f"Jornadas de cobro:          {len(collect_debts)}")
-print(f"Pagos realizados:           {payment_count}")
-print(f"Detalles de pago:           {db.query(PaymentDetail).count()}")
 print("=" * 60)
 print("CARGA COMPLETA FINALIZADA ✓")
 print("=" * 60)

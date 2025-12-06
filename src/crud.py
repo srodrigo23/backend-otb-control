@@ -282,6 +282,10 @@ def create_assistance(db: Session, assistance: schemas.AssistanceCreate):
     db.add(db_assistance)
     db.commit()
     db.refresh(db_assistance)
+
+    # Actualizar estadísticas de la reunión
+    update_meet_statistics(db, assistance.meet_id)
+
     return db_assistance
 
 
@@ -304,4 +308,112 @@ def update_assistance(db: Session, assistance_id: int, assistance: schemas.Assis
             setattr(db_assistance, key, value)
         db.commit()
         db.refresh(db_assistance)
+
+        # Actualizar estadísticas de la reunión
+        update_meet_statistics(db, db_assistance.meet_id)
+
     return db_assistance
+
+
+def update_meet_statistics(db: Session, meet_id: int):
+    """
+    Actualiza las estadísticas de asistencia de una reunión
+    """
+    meet = db.query(models.Meet).filter(models.Meet.id == meet_id).first()
+    if meet:
+        # Obtener todas las asistencias de esta reunión
+        assistances = db.query(models.Assistance).filter(models.Assistance.meet_id == meet_id).all()
+
+        # Calcular estadísticas
+        total_neighbors = len(assistances)
+        total_present = sum(1 for a in assistances if a.is_present)
+        total_absent = sum(1 for a in assistances if not a.is_present)
+        total_on_time = sum(1 for a in assistances if a.is_on_time)
+
+        # Actualizar el registro de la reunión
+        meet.total_neighbors = total_neighbors
+        meet.total_present = total_present
+        meet.total_absent = total_absent
+        meet.total_on_time = total_on_time
+
+        db.commit()
+        db.refresh(meet)
+    return meet
+
+
+# ========== RECAUDACIONES ==========
+
+def get_collect_debts(db: Session):
+    """
+    Obtiene todas las recaudaciones ordenadas por fecha de creación (más recientes primero)
+    """
+    return db.query(models.CollectDebt).order_by(models.CollectDebt.created_at.desc()).all()
+
+
+def get_collect_debt(db: Session, collect_debt_id: int):
+    """
+    Obtiene una recaudación específica por ID
+    """
+    return db.query(models.CollectDebt).filter(models.CollectDebt.id == collect_debt_id).first()
+
+
+def create_collect_debt(db: Session, collect_debt: schemas.CollectDebtCreate):
+    """
+    Crea una nueva recaudación
+    """
+    from datetime import datetime
+
+    # Convertir la fecha de string a objeto Date
+    collect_date = datetime.strptime(collect_debt.collect_date, "%Y-%m-%d").date()
+
+    db_collect_debt = models.CollectDebt(
+        collect_date=collect_date,
+        period=collect_debt.period,
+        collector_name=collect_debt.collector_name,
+        location=collect_debt.location,
+        notes=collect_debt.notes,
+        status="in_progress",
+        total_payments=0,
+        total_collected=0,
+        total_neighbors_paid=0
+    )
+    db.add(db_collect_debt)
+    db.commit()
+    db.refresh(db_collect_debt)
+    return db_collect_debt
+
+
+def update_collect_debt(db: Session, collect_debt_id: int, collect_debt: schemas.CollectDebtUpdate):
+    """
+    Actualiza una recaudación existente
+    """
+    db_collect_debt = db.query(models.CollectDebt).filter(models.CollectDebt.id == collect_debt_id).first()
+    if db_collect_debt:
+        update_data = collect_debt.model_dump(exclude_unset=True)
+
+        # Convertir fechas si se proporcionan
+        from datetime import datetime
+        if "collect_date" in update_data and update_data["collect_date"]:
+            update_data["collect_date"] = datetime.strptime(update_data["collect_date"], "%Y-%m-%d").date()
+        if "start_time" in update_data and update_data["start_time"]:
+            update_data["start_time"] = datetime.strptime(update_data["start_time"], "%Y-%m-%dT%H:%M")
+        if "end_time" in update_data and update_data["end_time"]:
+            update_data["end_time"] = datetime.strptime(update_data["end_time"], "%Y-%m-%dT%H:%M")
+
+        for key, value in update_data.items():
+            setattr(db_collect_debt, key, value)
+        db.commit()
+        db.refresh(db_collect_debt)
+    return db_collect_debt
+
+
+def delete_collect_debt(db: Session, collect_debt_id: int):
+    """
+    Elimina una recaudación
+    """
+    db_collect_debt = db.query(models.CollectDebt).filter(models.CollectDebt.id == collect_debt_id).first()
+    if db_collect_debt:
+        db.delete(db_collect_debt)
+        db.commit()
+        return True
+    return False

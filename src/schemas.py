@@ -109,7 +109,7 @@ class NeighborDebtsResponse(BaseModel):
   total_debts: int  # Total de deudas activas
   total_amount: int  # Monto total adeudado en centavos
   total_balance: int  # Saldo total pendiente
-  debts: list[DebtItemDetail]
+  debt_details: list[DebtItemDetail]
 
 
 # Schemas para Measure (Mediciones)
@@ -147,6 +147,30 @@ class Measure(BaseModel):
   notes: str | None = None
   created_at: str
   updated_at: str
+
+  class Config:
+    from_attributes = True
+
+
+# Schemas para MeterReading (Lecturas de medidores)
+class MeterReading(BaseModel):
+  id: int
+  meter_id: int
+  measure_id: int
+  current_reading: int
+  reading_date: str
+  status: str
+  has_anomaly: bool
+  notes: str | None = None
+  created_at: str
+  updated_at: str
+
+  # Información del vecino y medidor
+  neighbor_first_name: str | None = None
+  neighbor_second_name: str | None = None
+  neighbor_last_name: str | None = None
+  neighbor_ci: str | None = None
+  meter_number: str | None = None
 
   class Config:
     from_attributes = True
@@ -243,6 +267,53 @@ class Assistance(BaseModel):
   represented_by: str | None = None
   has_representative: bool
   notes: str | None = None
+
+  class Config:
+    from_attributes = True
+
+
+# Schemas para CollectDebt (Recaudaciones)
+class CollectDebtBase(BaseModel):
+  collect_date: str  # Fecha en formato string
+  period: str | None = None
+  collector_name: str | None = None
+  location: str | None = None
+  notes: str | None = None
+
+
+class CollectDebtCreate(CollectDebtBase):
+  pass
+
+
+class CollectDebtUpdate(BaseModel):
+  collect_date: str | None = None
+  period: str | None = None
+  collector_name: str | None = None
+  location: str | None = None
+  status: str | None = None
+  total_payments: int | None = None
+  total_collected: int | None = None
+  total_neighbors_paid: int | None = None
+  start_time: str | None = None
+  end_time: str | None = None
+  notes: str | None = None
+
+
+class CollectDebt(BaseModel):
+  id: int
+  collect_date: str
+  period: str | None = None
+  collector_name: str | None = None
+  location: str | None = None
+  status: str
+  total_payments: int
+  total_collected: int
+  total_neighbors_paid: int
+  start_time: str | None = None
+  end_time: str | None = None
+  notes: str | None = None
+  created_at: str
+  updated_at: str
 
   class Config:
     from_attributes = True 
