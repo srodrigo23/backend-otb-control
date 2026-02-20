@@ -11,7 +11,7 @@ app = FastAPI()
 # config for CORS
 origins = [
     "http://localhost:5173",
-    #"http://localhost:8000",
+    # "http://localhost:8000",
 ]
 
 app.add_middleware(
@@ -27,6 +27,7 @@ def get_db():
   db = SessionLocal()
   try:
       yield db
+      
   finally:
       db.close()
 
