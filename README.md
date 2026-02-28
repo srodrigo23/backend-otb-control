@@ -1,7 +1,7 @@
 
 ### Development command
 ``` 
-$ fastapi dev src/app.py
+$ fastapi dev app/main.py
 ```
 
 ### Production command
