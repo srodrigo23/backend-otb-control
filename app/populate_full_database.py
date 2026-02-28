@@ -9,8 +9,8 @@ import random
 
 # Configurar engine
 engine = sqlalchemy.create_engine(
-    f'sqlite:///db_test.db'
-    # f"postgresql://postgres:otbcentralizadoqwerty@db.vnuioejzhnwuokpzwnqn.supabase.co:5432/postgres"
+    
+    'link here'
 )
 
 # Crear todas las tablas

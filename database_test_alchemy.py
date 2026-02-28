@@ -4,8 +4,10 @@ from app.models.model import Neighbor
 import pandas as pd
 from datetime import datetime
 
+from app.settings import settings
+
 # here url database
-engine=sqlalchemy.create_engine('')
+engine=sqlalchemy.create_engine(settings.db_url_supabase)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 db = SessionLocal()
@@ -56,7 +58,7 @@ for index, row in df.iterrows():
     phone_number=int(row['Cel']) if pd.notna(row['Cel']) else None,
     email=None,  # No hay email en el CSV
     birth_day=parse_date(row['Fecha Nac']),
-    meter_code=str(row['Cod. medidor']).strip() if pd.notna(row['Cod. medidor']) else None,
+    # meter_code=str(row['Cod. medidor']).strip() if pd.notna(row['Cod. medidor']) else None,
     section=str(row['Seccion']).strip() if pd.notna(row['Seccion']) else None
   )
 

@@ -7,13 +7,14 @@ from .schemas import schema as schemas
 from .db.database import SessionLocal, engine
 from fastapi.middleware.cors import CORSMiddleware
 
+# from settings import settings
+
 model.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 # config for CORS
 origins = [
     "http://localhost:5173",
-    # "http://localhost:8000",
 ]
 
 app.add_middleware(
