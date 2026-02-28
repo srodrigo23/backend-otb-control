@@ -7,7 +7,7 @@ os.chdir('/Users/sergiorodrigo/Documents/GitHub/srodrigo23/otb/web-app/backend')
 sys.path.insert(0, '/Users/sergiorodrigo/Documents/GitHub/srodrigo23/otb/web-app/backend/src')
 
 from sqlalchemy.orm import Session
-import crud, models, schemas
+import services.crud as crud, models, schemas
 from database import SessionLocal
 
 # Crear sesión

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker
 import sqlalchemy
-from models import (
+from app.models.model import (
     Neighbor, NeighborMeter, Measure, MeterReading, DebtType
 )
 import pandas as pd
@@ -14,7 +14,7 @@ engine = sqlalchemy.create_engine(
 )
 
 # Crear todas las tablas
-from database import Base
+from app.db.database import Base
 Base.metadata.create_all(bind=engine)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

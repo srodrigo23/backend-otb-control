@@ -1,23 +1,24 @@
 from sqlalchemy.orm import Session
 
-import models, schemas
+from ..models import model
+from ..schemas import schema as schemas
 
 
 def get_neighbor(db: Session, neighbor_id: int):
-    return db.query(models.Neighbor).filter(models.Neighbor.id == neighbor_id).first()
+    return db.query(model.Neighbor).filter(model.Neighbor.id == neighbor_id).first()
 
 
 def get_neighbor_by_email(db: Session, email: str):
-    return db.query(models.Neighbor).filter(models.Neighbor.email == email).first()
+    return db.query(model.Neighbor).filter(model.Neighbor.email == email).first()
 
 
 def get_neighbors(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Neighbor).all()
+    return db.query(model.Neighbor).all()
         #.offset(skip).limit(limit)
 
 
 def create_neighbor(db: Session, neighbor: schemas.NeighborCreate):
-    db_neighbor = models.Neighbor(
+    db_neighbor = model.Neighbor(
         first_name=neighbor.first_name,
         second_name=neighbor.second_name or "",
         last_name=neighbor.last_name,
@@ -33,22 +34,22 @@ def create_neighbor(db: Session, neighbor: schemas.NeighborCreate):
 
 def get_neighbor_meters(db: Session, neighbor_id: int):
     """Obtiene todos los medidores de un vecino"""
-    return db.query(models.NeighborMeter).filter(models.NeighborMeter.neighbor_id == neighbor_id).all()
+    return db.query(model.NeighborMeter).filter(model.NeighborMeter.neighbor_id == neighbor_id).all()
 
 
 def get_neighbor_payments(db: Session, neighbor_id: int):
     """Obtiene todos los pagos de un vecino ordenados por fecha descendente"""
-    return db.query(models.Payment).filter(
-        models.Payment.neighbor_id == neighbor_id
-    ).order_by(models.Payment.payment_date.desc()).all()
+    return db.query(model.Payment).filter(
+        model.Payment.neighbor_id == neighbor_id
+    ).order_by(model.Payment.payment_date.desc()).all()
 
 
 def get_items(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Item).offset(skip).limit(limit).all()
+    return db.query(model.Item).offset(skip).limit(limit).all()
 
 
 def create_user_item(db: Session, item: schemas.ItemCreate, user_id: int):
-    db_item = models.Item(**item.model_dump(), owner_id=user_id)
+    db_item = model.Item(**item.model_dump(), owner_id=user_id)
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
@@ -56,7 +57,7 @@ def create_user_item(db: Session, item: schemas.ItemCreate, user_id: int):
 
 
 def update_neighbor(db: Session, neighbor_id: int, neighbor: schemas.NeighborUpdate):
-    db_neighbor = db.query(models.Neighbor).filter(models.Neighbor.id == neighbor_id).first()
+    db_neighbor = db.query(model.Neighbor).filter(model.Neighbor.id == neighbor_id).first()
     if db_neighbor:
         update_data = neighbor.model_dump(exclude_unset=True)
         for key, value in update_data.items():
@@ -67,7 +68,7 @@ def update_neighbor(db: Session, neighbor_id: int, neighbor: schemas.NeighborUpd
 
 
 def delete_neighbor(db: Session, neighbor_id: int):
-    db_neighbor = db.query(models.Neighbor).filter(models.Neighbor.id == neighbor_id).first()
+    db_neighbor = db.query(model.Neighbor).filter(model.Neighbor.id == neighbor_id).first()
     if db_neighbor:
         db.delete(db_neighbor)
         db.commit()
@@ -81,9 +82,9 @@ def get_neighbor_active_debts(db: Session, neighbor_id: int):
     """
     Obtiene todas las deudas activas (pending, partial, overdue) de un vecino
     """
-    debts = db.query(models.DebtItem).filter(
-        models.DebtItem.neighbor_id == neighbor_id,
-        models.DebtItem.status.in_(["pending", "partial", "overdue"])
+    debts = db.query(model.DebtItem).filter(
+        model.DebtItem.neighbor_id == neighbor_id,
+        model.DebtItem.status.in_(["pending", "partial", "overdue"])
     ).all()
 
     return debts
@@ -93,8 +94,8 @@ def get_neighbor_all_debts(db: Session, neighbor_id: int):
     """
     Obtiene todas las deudas de un vecino (incluyendo pagadas)
     """
-    debts = db.query(models.DebtItem).filter(
-        models.DebtItem.neighbor_id == neighbor_id
+    debts = db.query(model.DebtItem).filter(
+        model.DebtItem.neighbor_id == neighbor_id
     ).all()
 
     return debts
@@ -104,7 +105,7 @@ def get_debt_item(db: Session, debt_id: int):
     """
     Obtiene una deuda específica por ID
     """
-    return db.query(models.DebtItem).filter(models.DebtItem.id == debt_id).first()
+    return db.query(model.DebtItem).filter(model.DebtItem.id == debt_id).first()
 
 
 # ========== MEDICIONES ==========
@@ -113,14 +114,14 @@ def get_measures(db: Session):
     """
     Obtiene todas las mediciones ordenadas por fecha de creación (más recientes primero)
     """
-    return db.query(models.Measure).order_by(models.Measure.created_at.desc()).all()
+    return db.query(model.Measure).order_by(model.Measure.created_at.desc()).all()
 
 
 def get_measure(db: Session, measure_id: int):
     """
     Obtiene una medición específica por ID
     """
-    return db.query(models.Measure).filter(models.Measure.id == measure_id).first()
+    return db.query(model.Measure).filter(model.Measure.id == measure_id).first()
 
 
 def create_measure(db: Session, measure: schemas.MeasureCreate):
@@ -132,7 +133,7 @@ def create_measure(db: Session, measure: schemas.MeasureCreate):
     # Convertir la fecha de string a objeto Date
     measure_date = datetime.strptime(measure.measure_date, "%Y-%m-%d").date()
 
-    db_measure = models.Measure(
+    db_measure = model.Measure(
         measure_date=measure_date,
         period=measure.period,
         reader_name=measure.reader_name,
@@ -152,7 +153,7 @@ def update_measure(db: Session, measure_id: int, measure: schemas.MeasureUpdate)
     """
     Actualiza una medición existente
     """
-    db_measure = db.query(models.Measure).filter(models.Measure.id == measure_id).first()
+    db_measure = db.query(model.Measure).filter(model.Measure.id == measure_id).first()
     if db_measure:
         update_data = measure.model_dump(exclude_unset=True)
 
@@ -172,7 +173,7 @@ def delete_measure(db: Session, measure_id: int):
     """
     Elimina una medición
     """
-    db_measure = db.query(models.Measure).filter(models.Measure.id == measure_id).first()
+    db_measure = db.query(model.Measure).filter(model.Measure.id == measure_id).first()
     if db_measure:
         db.delete(db_measure)
         db.commit()
@@ -186,14 +187,14 @@ def get_meets(db: Session):
     """
     Obtiene todas las reuniones ordenadas por fecha de creación (más recientes primero)
     """
-    return db.query(models.Meet).order_by(models.Meet.created_at.desc()).all()
+    return db.query(model.Meet).order_by(model.Meet.created_at.desc()).all()
 
 
 def get_meet(db: Session, meet_id: int):
     """
     Obtiene una reunión específica por ID
     """
-    return db.query(models.Meet).filter(models.Meet.id == meet_id).first()
+    return db.query(model.Meet).filter(model.Meet.id == meet_id).first()
 
 
 def create_meet(db: Session, meet: schemas.MeetCreate):
@@ -205,7 +206,7 @@ def create_meet(db: Session, meet: schemas.MeetCreate):
     # Convertir la fecha de string a objeto DateTime
     meet_date = datetime.strptime(meet.meet_date, "%Y-%m-%dT%H:%M")
 
-    db_meet = models.Meet(
+    db_meet = model.Meet(
         meet_date=meet_date,
         meet_type=meet.meet_type,
         title=meet.title,
@@ -230,7 +231,7 @@ def update_meet(db: Session, meet_id: int, meet: schemas.MeetUpdate):
     """
     Actualiza una reunión existente
     """
-    db_meet = db.query(models.Meet).filter(models.Meet.id == meet_id).first()
+    db_meet = db.query(model.Meet).filter(model.Meet.id == meet_id).first()
     if db_meet:
         update_data = meet.model_dump(exclude_unset=True)
 
@@ -254,7 +255,7 @@ def delete_meet(db: Session, meet_id: int):
     """
     Elimina una reunión
     """
-    db_meet = db.query(models.Meet).filter(models.Meet.id == meet_id).first()
+    db_meet = db.query(model.Meet).filter(model.Meet.id == meet_id).first()
     if db_meet:
         db.delete(db_meet)
         db.commit()
@@ -266,14 +267,14 @@ def get_meet_assistances(db: Session, meet_id: int):
     """
     Obtiene todas las asistencias de una reunión específica
     """
-    return db.query(models.Assistance).filter(models.Assistance.meet_id == meet_id).all()
+    return db.query(model.Assistance).filter(model.Assistance.meet_id == meet_id).all()
 
 
 def create_assistance(db: Session, assistance: schemas.AssistanceCreate):
     """
     Crea un registro de asistencia
     """
-    db_assistance = models.Assistance(
+    db_assistance = model.Assistance(
         meet_id=assistance.meet_id,
         neighbor_id=assistance.neighbor_id,
         is_present=assistance.is_present,
@@ -293,7 +294,7 @@ def update_assistance(db: Session, assistance_id: int, assistance: schemas.Assis
     """
     Actualiza un registro de asistencia
     """
-    db_assistance = db.query(models.Assistance).filter(models.Assistance.id == assistance_id).first()
+    db_assistance = db.query(model.Assistance).filter(model.Assistance.id == assistance_id).first()
     if db_assistance:
         update_data = assistance.model_dump(exclude_unset=True)
 
@@ -319,10 +320,10 @@ def update_meet_statistics(db: Session, meet_id: int):
     """
     Actualiza las estadísticas de asistencia de una reunión
     """
-    meet = db.query(models.Meet).filter(models.Meet.id == meet_id).first()
+    meet = db.query(model.Meet).filter(model.Meet.id == meet_id).first()
     if meet:
         # Obtener todas las asistencias de esta reunión
-        assistances = db.query(models.Assistance).filter(models.Assistance.meet_id == meet_id).all()
+        assistances = db.query(model.Assistance).filter(model.Assistance.meet_id == meet_id).all()
 
         # Calcular estadísticas
         total_neighbors = len(assistances)
@@ -347,14 +348,14 @@ def get_collect_debts(db: Session):
     """
     Obtiene todas las recaudaciones ordenadas por fecha de creación (más recientes primero)
     """
-    return db.query(models.CollectDebt).order_by(models.CollectDebt.created_at.desc()).all()
+    return db.query(model.CollectDebt).order_by(model.CollectDebt.created_at.desc()).all()
 
 
 def get_collect_debt(db: Session, collect_debt_id: int):
     """
     Obtiene una recaudación específica por ID
     """
-    return db.query(models.CollectDebt).filter(models.CollectDebt.id == collect_debt_id).first()
+    return db.query(model.CollectDebt).filter(model.CollectDebt.id == collect_debt_id).first()
 
 
 def create_collect_debt(db: Session, collect_debt: schemas.CollectDebtCreate):
@@ -366,7 +367,7 @@ def create_collect_debt(db: Session, collect_debt: schemas.CollectDebtCreate):
     # Convertir la fecha de string a objeto Date
     collect_date = datetime.strptime(collect_debt.collect_date, "%Y-%m-%d").date()
 
-    db_collect_debt = models.CollectDebt(
+    db_collect_debt = model.CollectDebt(
         collect_date=collect_date,
         period=collect_debt.period,
         collector_name=collect_debt.collector_name,
@@ -387,7 +388,7 @@ def update_collect_debt(db: Session, collect_debt_id: int, collect_debt: schemas
     """
     Actualiza una recaudación existente
     """
-    db_collect_debt = db.query(models.CollectDebt).filter(models.CollectDebt.id == collect_debt_id).first()
+    db_collect_debt = db.query(model.CollectDebt).filter(model.CollectDebt.id == collect_debt_id).first()
     if db_collect_debt:
         update_data = collect_debt.model_dump(exclude_unset=True)
 
@@ -411,7 +412,7 @@ def delete_collect_debt(db: Session, collect_debt_id: int):
     """
     Elimina una recaudación
     """
-    db_collect_debt = db.query(models.CollectDebt).filter(models.CollectDebt.id == collect_debt_id).first()
+    db_collect_debt = db.query(model.CollectDebt).filter(model.CollectDebt.id == collect_debt_id).first()
     if db_collect_debt:
         db.delete(db_collect_debt)
         db.commit()

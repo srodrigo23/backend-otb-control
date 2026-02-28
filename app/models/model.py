@@ -2,7 +2,7 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Date, DateT
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
-from database import Base
+from app.db.database import Base
 
 
 class Neighbor(Base):

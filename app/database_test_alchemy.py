@@ -1,14 +1,11 @@
 from sqlalchemy.orm import sessionmaker
 import sqlalchemy
-from models import Neighbor
+from app.models.model import Neighbor
 import pandas as pd
 from datetime import datetime
 
-engine=sqlalchemy.create_engine(
-  f'sqlite:///db_test.db'
-  # f"postgresql://postgres:otbcentralizadoqwerty@db.vnuioejzhnwuokpzwnqn.supabase.co:5432/postgres"
-  # f"postgresql://postgres.vnuioejzhnwuokpzwnqn:otbcentralizadoqwerty@aws-0-us-east-2.pooler.supabase.com:5432/postgres"
-)
+# here url database
+engine=sqlalchemy.create_engine('')
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 db = SessionLocal()

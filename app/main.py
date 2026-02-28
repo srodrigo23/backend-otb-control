@@ -1,11 +1,13 @@
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
 
-import crud, models, schemas
-from database import SessionLocal, engine
+from .services import crud
+from .models import model
+from .schemas import schema as schemas
+from .db.database import SessionLocal, engine
 from fastapi.middleware.cors import CORSMiddleware
 
-models.Base.metadata.create_all(bind=engine)
+model.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 # config for CORS
@@ -298,7 +300,7 @@ def migrate_debts_to_bolivianos(db: Session = Depends(get_db)):
   IMPORTANTE: Ejecutar solo una vez para migrar datos existentes
   """
   # Migrar DebtItems
-  debts = db.query(models.DebtItem).all()
+  debts = db.query(model.DebtItem).all()
   debts_updated = 0
 
   for debt in debts:
@@ -311,7 +313,7 @@ def migrate_debts_to_bolivianos(db: Session = Depends(get_db)):
     debts_updated += 1
 
   # Migrar Payments
-  payments = db.query(models.Payment).all()
+  payments = db.query(model.Payment).all()
   payments_updated = 0
 
   for payment in payments:
@@ -319,7 +321,7 @@ def migrate_debts_to_bolivianos(db: Session = Depends(get_db)):
     payments_updated += 1
 
   # Migrar PaymentDetails
-  payment_details = db.query(models.PaymentDetail).all()
+  payment_details = db.query(model.PaymentDetail).all()
   details_updated = 0
 
   for detail in payment_details:
@@ -331,7 +333,7 @@ def migrate_debts_to_bolivianos(db: Session = Depends(get_db)):
     details_updated += 1
 
   # Migrar CollectDebts
-  collect_debts = db.query(models.CollectDebt).all()
+  collect_debts = db.query(model.CollectDebt).all()
   collects_updated = 0
 
   for collect in collect_debts:
@@ -506,13 +508,13 @@ def get_measure_meter_readings(measure_id: int, db: Session = Depends(get_db)):
     raise HTTPException(status_code=404, detail="Measure not found")
 
   # Obtener todas las lecturas de esta medición con información del vecino y medidor
-  meter_readings = db.query(models.MeterReading).filter(
-    models.MeterReading.measure_id == measure_id
+  meter_readings = db.query(model.MeterReading).filter(
+    model.MeterReading.measure_id == measure_id
   ).join(
-    models.NeighborMeter, models.MeterReading.meter_id == models.NeighborMeter.id
+    model.NeighborMeter, model.MeterReading.meter_id == model.NeighborMeter.id
   ).join(
-    models.Neighbor, models.NeighborMeter.neighbor_id == models.Neighbor.id
-  ).order_by(models.Neighbor.last_name, models.Neighbor.first_name).all()
+    model.Neighbor, model.NeighborMeter.neighbor_id == model.Neighbor.id
+  ).order_by(model.Neighbor.last_name, model.Neighbor.first_name).all()
 
   # Formatear respuesta con información del vecino
   readings_data = []
@@ -540,7 +542,6 @@ def get_measure_meter_readings(measure_id: int, db: Session = Depends(get_db)):
 
   return readings_data
 
-
 @app.post("/measures/{measure_id}/generate-debts")
 def generate_debts_from_measure(measure_id: int, db: Session = Depends(get_db)):
   """
@@ -555,9 +556,9 @@ def generate_debts_from_measure(measure_id: int, db: Session = Depends(get_db)):
     raise HTTPException(status_code=404, detail="Measure not found")
 
   # Obtener o crear el tipo de deuda "Consumo de Agua"
-  debt_type = db.query(models.DebtType).filter(models.DebtType.name == "Consumo de Agua").first()
+  debt_type = db.query(model.DebtType).filter(model.DebtType.name == "Consumo de Agua").first()
   if not debt_type:
-    debt_type = models.DebtType(
+    debt_type = model.DebtType(
       name="Consumo de Agua",
       description="Deuda por consumo de agua mensual"
     )
@@ -566,10 +567,10 @@ def generate_debts_from_measure(measure_id: int, db: Session = Depends(get_db)):
     db.refresh(debt_type)
 
   # Obtener todas las lecturas de esta medición
-  meter_readings = db.query(models.MeterReading).filter(
-    models.MeterReading.measure_id == measure_id
+  meter_readings = db.query(model.MeterReading).filter(
+    model.MeterReading.measure_id == measure_id
   ).join(
-    models.NeighborMeter, models.MeterReading.meter_id == models.NeighborMeter.id
+    model.NeighborMeter, model.MeterReading.meter_id == model.NeighborMeter.id
   ).all()
 
   debts_created = 0
@@ -578,8 +579,8 @@ def generate_debts_from_measure(measure_id: int, db: Session = Depends(get_db)):
 
   for reading in meter_readings:
     # Verificar si ya existe una deuda para esta lectura
-    existing_debt = db.query(models.DebtItem).filter(
-      models.DebtItem.meter_reading_id == reading.id
+    existing_debt = db.query(model.DebtItem).filter(
+      model.DebtItem.meter_reading_id == reading.id
     ).first()
 
     if existing_debt:
@@ -587,10 +588,10 @@ def generate_debts_from_measure(measure_id: int, db: Session = Depends(get_db)):
       continue
 
     # Obtener la lectura anterior del mismo medidor
-    previous_reading = db.query(models.MeterReading).filter(
-      models.MeterReading.meter_id == reading.meter_id,
-      models.MeterReading.id < reading.id
-    ).order_by(models.MeterReading.id.desc()).first()
+    previous_reading = db.query(model.MeterReading).filter(
+      model.MeterReading.meter_id == reading.meter_id,
+      model.MeterReading.id < reading.id
+    ).order_by(model.MeterReading.id.desc()).first()
 
     # Calcular consumo
     if previous_reading:
@@ -607,7 +608,7 @@ def generate_debts_from_measure(measure_id: int, db: Session = Depends(get_db)):
 
     # Crear la deuda
     from datetime import date
-    debt_item = models.DebtItem(
+    debt_item = model.DebtItem(
       neighbor_id=reading.meter.neighbor_id,
       debt_type_id=debt_type.id,
       meter_reading_id=reading.id,
@@ -653,16 +654,16 @@ def delete_measure_debts(measure_id: int, db: Session = Depends(get_db)):
     raise HTTPException(status_code=404, detail="Measure not found")
 
   # Obtener todas las lecturas de esta medición
-  meter_readings = db.query(models.MeterReading).filter(
-    models.MeterReading.measure_id == measure_id
+  meter_readings = db.query(model.MeterReading).filter(
+    model.MeterReading.measure_id == measure_id
   ).all()
 
   reading_ids = [reading.id for reading in meter_readings]
 
   # Eliminar solo las deudas pendientes (no pagadas) asociadas a estas lecturas
-  debts_deleted = db.query(models.DebtItem).filter(
-    models.DebtItem.meter_reading_id.in_(reading_ids),
-    models.DebtItem.status == "pending"
+  debts_deleted = db.query(model.DebtItem).filter(
+    model.DebtItem.meter_reading_id.in_(reading_ids),
+    model.DebtItem.status == "pending"
   ).delete(synchronize_session=False)
 
   db.commit()
@@ -1059,9 +1060,9 @@ def get_collect_debt_payments(collect_debt_id: int, db: Session = Depends(get_db
   if collect_debt is None:
     raise HTTPException(status_code=404, detail="CollectDebt not found")
 
-  payments = db.query(models.Payment).filter(
-    models.Payment.collect_debt_id == collect_debt_id
-  ).order_by(models.Payment.payment_date.desc()).all()
+  payments = db.query(model.Payment).filter(
+    model.Payment.collect_debt_id == collect_debt_id
+  ).order_by(model.Payment.payment_date.desc()).all()
 
   payments_data = []
   for payment in payments:
@@ -1132,7 +1133,7 @@ def create_collect_debt_payment(
     raise HTTPException(status_code=404, detail="Neighbor not found")
 
   # Crear el pago
-  db_payment = models.Payment(
+  db_payment = model.Payment(
     neighbor_id=neighbor_id,
     collect_debt_id=collect_debt_id,
     payment_date=datetime.utcnow().date(),
@@ -1158,7 +1159,7 @@ def create_collect_debt_payment(
         new_balance = previous_balance - amount_applied
 
         # Crear detalle de pago
-        payment_detail = models.PaymentDetail(
+        payment_detail = model.PaymentDetail(
           payment_id=db_payment.id,
           debt_item_id=debt_item_id,
           amount_applied=amount_applied,
@@ -1183,8 +1184,8 @@ def create_collect_debt_payment(
   collect_debt.total_collected += total_amount
 
   # Contar vecinos únicos que han pagado
-  unique_neighbors = db.query(models.Payment.neighbor_id).filter(
-    models.Payment.collect_debt_id == collect_debt_id
+  unique_neighbors = db.query(model.Payment.neighbor_id).filter(
+    model.Payment.collect_debt_id == collect_debt_id
   ).distinct().count()
   collect_debt.total_neighbors_paid = unique_neighbors
 
