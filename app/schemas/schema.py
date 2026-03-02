@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-
+from ..enums import UserType
 
 class ItemBase(BaseModel):
   title: str
@@ -317,3 +317,9 @@ class CollectDebt(BaseModel):
 
   class Config:
     from_attributes = True 
+
+class User(BaseModel):
+  name:str
+  password:str
+  user_type: UserType
+  

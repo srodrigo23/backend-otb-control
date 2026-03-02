@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker
 import sqlalchemy
-from app.models.model import Neighbor
+from app.models import Neighbor
 import pandas as pd
 from datetime import datetime
 

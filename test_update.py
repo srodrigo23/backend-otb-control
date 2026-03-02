@@ -1,6 +1,6 @@
 import sys
 
-from app.models import model
+from app.models.__ import init__
 from services import crud
 sys.path.insert(0, 'src')
 
@@ -13,7 +13,7 @@ db = SessionLocal()
 
 try:
     # Intentar obtener el usuario
-    user = db.query(model.User).filter(model.User.id == 4).first()
+    user = db.query(init__.User).filter(init__.User.id == 4).first()
     print(f"Usuario encontrado: {user}")
     print(f"first_name: {user.first_name}")
     print(f"second_name: {user.second_name}")

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker
 import sqlalchemy
-from app.models.model import (
+from app.models import (
     Neighbor, NeighborMeter, Measure, MeterReading, DebtType
 )
 import pandas as pd
