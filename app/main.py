@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from .services import crud
@@ -8,6 +8,7 @@ from .db.database import SessionLocal, engine, Base
 from fastapi.middleware.cors import CORSMiddleware
 
 from .settings import settings
+from .schemas.schema import LoginRequest
 
 Base.metadata.create_all(bind=engine)
 
@@ -38,6 +39,15 @@ def get_db():
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
+  
+@app.post("/login")
+def login(data:LoginRequest, response: Response):
+  user = crud.get_user_by_username(data.username)
+  if user is not None:
+    
+  
+  pass
+
 
 @app.post("/neighbors/", response_model=schemas.Neighbor)
 def create_neighbor(neighbor: schemas.NeighborCreate, db: Session = Depends(get_db)):

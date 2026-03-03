@@ -322,4 +322,8 @@ class User(BaseModel):
   name:str
   password:str
   user_type: UserType
-  
+
+
+class LoginRequest(BaseModel):
+  username:str
+  password:str
