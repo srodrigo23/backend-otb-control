@@ -14,7 +14,7 @@ class User(Base):
   role = Column(Enum(UserType), nullable=False)
   
   def verify_password(self, password):
-    pwhash = bcrypt.hashpw(password, self.password_hash)
+    pwhash = bcrypt.hashpw(password.encode('utf-8'), self.password_hash)
     return pwhash == self.password_hash
   
   
