@@ -146,21 +146,22 @@ def get_measure_meter_readings(measure_id: int, db: Session = Depends(get_db)):
     readings_data.append({
       "id": reading.id,
       "meter_id": reading.meter_id,
+      "meter_number": reading.meter.meter_code,
+      
       "measure_id": reading.measure_id,
       "current_reading": reading.current_reading,
-      "reading_date": str(reading.reading_date),
-      "status": reading.status,
-      "has_anomaly": reading.has_anomaly,
+      # "reading_date": str(reading.reading_date),
+      # "status": reading.status,
+      # "has_anomaly": reading.has_anomaly,
       "notes": reading.notes,
-      "created_at": str(reading.created_at),
-      "updated_at": str(reading.updated_at),
+      
       # Información del vecino
       "neighbor_first_name": neighbor.first_name,
       "neighbor_second_name": neighbor.second_name,
       "neighbor_last_name": neighbor.last_name,
-      "neighbor_ci": neighbor.ci,
-      # Información del medidor
-      "meter_number": reading.meter.meter_code,
+      
+      "created_at": str(reading.created_at),
+      "updated_at": str(reading.updated_at),
     })
 
   return readings_data
