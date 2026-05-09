@@ -13,8 +13,11 @@ class User(Base):
   password_hash = Column(String(128))
   role = Column(Enum(UserType), nullable=False)
   
-  def verify_password(self, password):
-    pwhash = bcrypt.hashpw(password.encode('utf-8'), self.password_hash)
-    return pwhash == self.password_hash
+  def verify_password(self, password:str):
+    return bcrypt.checkpw(
+      password.encode('utf-8'), 
+      self.password_hash.encode('utf-8')
+    )
+    # return pwhash == self.password_hash
   
   

@@ -12,13 +12,13 @@ from app.settings import settings
 import bcrypt
 
 # here url database
-engine=sqlalchemy.create_engine(settings.db_url_sqlite)
+engine=sqlalchemy.create_engine(settings.db_url_supabase)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 db = SessionLocal()
 
 # Leer el archivo CSV
-df = pd.read_csv('data/vecinos_of.csv')
+# df = pd.read_csv('data/vecinos_of.csv')
 
 def hash_password(text:str):
   return bcrypt.hashpw(text, bcrypt.gensalt())
@@ -44,41 +44,41 @@ def parse_date(date_str):
   return None
 
 # Iterar sobre cada fila del CSV
-for index, row in df.iterrows():
-  # Extraer nombres - dividir la columna "Nombres" por espacios
-  nombres = str(row['Nombres']).strip() if pd.notna(row['Nombres']) else ''
-  apellido_paterno = str(row['Apellido Paterno']).strip() if pd.notna(row['Apellido Paterno']) else ''
-  apellido_materno = str(row['Apellido Materno']).strip() if pd.notna(row['Apellido Materno']) else ''
+# for index, row in df.iterrows():
+#   # Extraer nombres - dividir la columna "Nombres" por espacios
+#   nombres = str(row['Nombres']).strip() if pd.notna(row['Nombres']) else ''
+#   apellido_paterno = str(row['Apellido Paterno']).strip() if pd.notna(row['Apellido Paterno']) else ''
+#   apellido_materno = str(row['Apellido Materno']).strip() if pd.notna(row['Apellido Materno']) else ''
 
-  # Combinar apellidos
-  last_name = f"{apellido_paterno} {apellido_materno}".strip()
+#   # Combinar apellidos
+#   last_name = f"{apellido_paterno} {apellido_materno}".strip()
 
-  # Separar primer y segundo nombre si hay espacios
-  nombre_parts = nombres.split() if nombres else ['']
-  first_name = nombre_parts[0] if len(nombre_parts) > 0 else ''
-  second_name = ' '.join(nombre_parts[1:]) if len(nombre_parts) > 1 else ''
+#   # Separar primer y segundo nombre si hay espacios
+#   nombre_parts = nombres.split() if nombres else ['']
+#   first_name = nombre_parts[0] if len(nombre_parts) > 0 else ''
+#   second_name = ' '.join(nombre_parts[1:]) if len(nombre_parts) > 1 else ''
 
-  db_n = Neighbor(
-    first_name=first_name or apellido_paterno,  # Si no hay nombre, usar apellido
-    second_name=second_name,
-    last_name=last_name,
-    ci=int(row['CI']) if pd.notna(row['CI']) else None,
-    phone_number=int(row['Cel']) if pd.notna(row['Cel']) else None,
-    email=None,  # No hay email en el CSV
-    birth_day=parse_date(row['Fecha Nac']),
-    # meter_code=str(row['Cod. medidor']).strip() if pd.notna(row['Cod. medidor']) else None,
-    section=str(row['Seccion']).strip() if pd.notna(row['Seccion']) else None
-  )
+#   db_n = Neighbor(
+#     first_name=first_name or apellido_paterno,  # Si no hay nombre, usar apellido
+#     second_name=second_name,
+#     last_name=last_name,
+#     ci=int(row['CI']) if pd.notna(row['CI']) else None,
+#     phone_number=int(row['Cel']) if pd.notna(row['Cel']) else None,
+#     email=None,  # No hay email en el CSV
+#     birth_day=parse_date(row['Fecha Nac']),
+#     # meter_code=str(row['Cod. medidor']).strip() if pd.notna(row['Cod. medidor']) else None,
+#     section=str(row['Seccion']).strip() if pd.notna(row['Seccion']) else None
+#   )
 
-  db.add(db_n)
-  print(f"Agregado: {first_name} {last_name} - Sección: {db_n.section}")
+#   db.add(db_n)
+#   print(f"Agregado: {first_name} {last_name} - Sección: {db_n.section}")
 
-# Confirmar todos los cambios
-db.commit()
-print(f"\nTotal de vecinos agregados: {len(df)}")
+# # Confirmar todos los cambios
+# db.commit()
+# print(f"\nTotal de vecinos agregados: {len(df)}")
 
 ### create system admyn's users
-password = hash_password(b'qwerty')
+password = hash_password(b'qwerty').decode('utf-8')
 users = [
   User(username="sergio.cardenas", password_hash=password, role=UserType.ADMIN), 
   User(username="miriam.lucana", password_hash=password, role=UserType.ADMIN), 
@@ -89,4 +89,4 @@ users = [
 # db.add()
 # db.add()
 db.commit()
-print(f"Usuarios creadios: {len(users)}" )
+print(f"Usuarios creados: {len(users)}" )

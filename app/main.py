@@ -66,7 +66,7 @@ def login(data:LoginRequest, response: Response, db: Session= Depends(get_db)):
       )
       return {"message": "Login successful"}
   return {
-    'success':'False'
+    'success':False
   }
   
 @app.get("/me")
