@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from .. import models
 from ..schemas import schema as schemas
 from ..services import crud
-from ..dependencies import get_db
+from ..db.database import get_db
 
 router = APIRouter(
   prefix="/debts", 

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from .services import crud
 from . import models
 from .schemas import schema as schemas
-from .db.database import SessionLocal, engine, Base
+from .db.database import SessionLocal, engine, Base, get_db
 from fastapi.middleware.cors import CORSMiddleware
 
 from .settings import settings
@@ -13,7 +13,6 @@ from datetime import datetime, timedelta
 from jose import jwt, JWTError
 
 from .routers import neighbors, meets, measures, collect_debts, debts
-from .dependencies import get_db
 
 Base.metadata.create_all(bind=engine)
 
