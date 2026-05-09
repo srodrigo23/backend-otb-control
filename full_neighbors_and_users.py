@@ -1,19 +1,27 @@
 from sqlalchemy.orm import sessionmaker
 import sqlalchemy
 from app.models import Neighbor
-import pandas as pd
-from datetime import datetime
+from app.models import User
+from app.enums import UserType
 
+import pandas as pd
+
+from datetime import datetime
 from app.settings import settings
 
+import bcrypt
+
 # here url database
-engine=sqlalchemy.create_engine(settings.db_url_supabase)
+engine=sqlalchemy.create_engine(settings.db_url_sqlite)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 db = SessionLocal()
 
 # Leer el archivo CSV
-df = pd.read_csv('data/vecinos.csv')
+df = pd.read_csv('data/vecinos_of.csv')
+
+def hash_password(text:str):
+  return bcrypt.hashpw(text, bcrypt.gensalt())
 
 def parse_date(date_str):
   """Convierte fechas en formato DD/MM/YYYY a objeto date"""
@@ -68,3 +76,17 @@ for index, row in df.iterrows():
 # Confirmar todos los cambios
 db.commit()
 print(f"\nTotal de vecinos agregados: {len(df)}")
+
+### create system admyn's users
+password = hash_password(b'qwerty')
+users = [
+  User(username="sergio.cardenas", password_hash=password, role=UserType.ADMIN), 
+  User(username="miriam.lucana", password_hash=password, role=UserType.ADMIN), 
+  User(username="reynaldo.perez", password_hash=password, role=UserType.ADMIN)
+]
+[db.add(user) for user in users ]
+
+# db.add()
+# db.add()
+db.commit()
+print(f"Usuarios creadios: {len(users)}" )
