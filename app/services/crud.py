@@ -61,6 +61,7 @@ def create_user_item(db: Session, item: schemas.ItemCreate, user_id: int):
 
 def update_neighbor(db: Session, neighbor_id: int, neighbor: schemas.NeighborUpdate):
     db_neighbor = db.query(models.Neighbor).filter(models.Neighbor.id == neighbor_id).first()
+    print(db_neighbor, 'here!')
     if db_neighbor:
         update_data = neighbor.model_dump(exclude_unset=True)
         for key, value in update_data.items():

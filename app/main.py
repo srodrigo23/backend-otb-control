@@ -24,16 +24,16 @@ origins = [
 ]
 
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+  CORSMiddleware,
+  allow_origins=origins,
+  allow_credentials=True,
+  allow_methods=["*"],
+  allow_headers=["*"],
 )
 
 app.include_router(neighbors.router)
 app.include_router(meets.router)
-app.include_router(measures.router)
+app.include_router(measures.router) 
 app.include_router(collect_debts.router)
 app.include_router(debts.router)
 
@@ -42,10 +42,10 @@ async def root():
   return {"message": "Hello World"}
 
 def create_access_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, settings.ALGORITHM, algorithm=settings.ALGORITHM)
+  to_encode = data.copy()
+  expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+  to_encode.update({"exp": expire})
+  return jwt.encode(to_encode, settings.ALGORITHM, algorithm=settings.ALGORITHM)
 
   
 @app.post("/login")

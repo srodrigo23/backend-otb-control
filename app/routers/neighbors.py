@@ -26,9 +26,9 @@ def read_neighbors(skip: int = 0, limit: int = 100, db: Session = Depends(get_db
   if neighbors:
     return {
       "data": neighbors,
-      "total": len(neighbors),
-      "page": skip // limit + 1 if limit > 0 else 1,
-      "size": limit
+      # "total": len(neighbors),
+      # "page": skip // limit + 1 if limit > 0 else 1,
+      # "size": limit
     }
   return {'success': 'True'}
 

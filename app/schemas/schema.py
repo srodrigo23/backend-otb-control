@@ -26,18 +26,18 @@ class NeighborCreate(BaseModel):
   first_name: str
   second_name: str | None = None
   last_name: str
-  ci: str
+  ci: str | int
   phone_number: str | int
   email: str | None = None
 
 
 class NeighborUpdate(BaseModel):
-  first_name: str | None = None
-  second_name: str | None = None
-  last_name: str | None = None
-  ci: str | None = None
-  phone_number: int | None = None
-  email: str | None = None
+  first_name: str 
+  second_name: str
+  last_name: str
+  ci: str | int
+  phone_number: str | int
+  email: str
 
 
 class Neighbor(BaseModel):
