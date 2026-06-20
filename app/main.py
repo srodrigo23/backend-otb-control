@@ -7,20 +7,21 @@ from .schemas import schema as schemas
 from .db.database import SessionLocal, engine, Base, get_db
 from fastapi.middleware.cors import CORSMiddleware
 
-from .settings import settings
+from app.routers import auth
+from app.core.settings import settings
 from .schemas.schema import LoginRequest
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
 
-from .routers import neighbors, meets, measures, collect_debts, debts
+from app.routers import neighbors, meets, measures, collect_debts, debts
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 # config for CORS
 origins = [
-  settings.client_url_dev,
-  settings.client_url_prod,
+  settings.CLIENT_URL_DEV,
+  settings.CLIENT_URL_PROD,
 ]
 
 app.add_middleware(
@@ -31,6 +32,7 @@ app.add_middleware(
   allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(neighbors.router)
 app.include_router(meets.router)
 app.include_router(measures.router) 
@@ -48,26 +50,26 @@ def create_access_token(data: dict):
   return jwt.encode(to_encode, settings.ALGORITHM, algorithm=settings.ALGORITHM)
 
   
-@app.post("/login")
-def login(data:LoginRequest, response: Response, db: Session= Depends(get_db)):
-  user = crud.get_user_by_username(db=db, username=data.username)
-  if user is not None:
-    if user.verify_password(data.password):
-      response.status_code = status.HTTP_202_ACCEPTED
+# @app.post("/login")
+# def login(data:LoginRequest, response: Response, db: Session= Depends(get_db)):
+#   user = crud.get_user_by_username(db=db, username=data.username)
+#   if user is not None:
+#     if user.verify_password(data.password):
+#       response.status_code = status.HTTP_202_ACCEPTED
       
-      token = create_access_token({"sub": data.username})
+#       token = create_access_token({"sub": data.username})
       
-      response.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        secure=settings.prod,  # True in production (HTTPS)
-        samesite="lax",
-      )
-      return {"message": "Login successful"}
-  return {
-    'success':False
-  }
+#       response.set_cookie(
+#         key="access_token",
+#         value=token,
+#         httponly=True,
+#         secure=settings.prod,  # True in production (HTTPS)
+#         samesite="lax",
+#       )
+#       return {"message": "Login successful"}
+#   return {
+#     'success':False
+#   }
   
 @app.get("/me")
 def get_me(access_token: str = Cookie(None)):

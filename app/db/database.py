@@ -2,9 +2,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from ..settings import settings
+from app.core.settings import settings
 
-DATABASE_URL = settings.db_url_supabase if settings.prod else settings.db_url_sqlite 
+DATABASE_URL = settings.DB_URL_SUPABASE if settings.ENVIRONMENT == "PRODUCTION" else settings.DB_URL_SQLITE 
 
 engine = create_engine(
   DATABASE_URL,  
@@ -14,7 +14,6 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
-
 
 def get_db():
   db = SessionLocal()
