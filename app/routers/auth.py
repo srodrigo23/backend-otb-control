@@ -14,16 +14,13 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/login")
 def login(credentials: LoginSchema, response: Response, db: Session = Depends(get_db)):
-  print('local')
   user = verify_credentials(credentials.username, credentials.password, db)
   if not user:
     raise HTTPException(status_code=401, detail="Invalid Credentials")
   
   token = create_access_token({"sub":str(user.id)})
   set_auth_cookie(response=response, token=token)
-  return {
-    "user":user
-  }
+  return user
 
 @router.get('/me')
 def me(current_user=Depends(get_current_user)):
