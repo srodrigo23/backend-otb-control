@@ -29,3 +29,4 @@ def me(current_user=Depends(get_current_user)):
 @router.post('/logout')
 def logout(response: Response):
   delete_auth_cookie(response=response)
+  return{"logout":True}
